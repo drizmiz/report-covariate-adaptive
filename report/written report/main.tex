@@ -1,0 +1,588 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{mathrsfs}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{fdsymbol}
+\usepackage{bbm}
+\usepackage{graphicx}
+\usepackage{indentfirst}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{natbib}
+\usepackage{array}
+\usepackage{lscape}
+\usepackage{xspace}
+\usepackage{endfloat}
+
+\usepackage{arxiv}
+
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+% \usepackage{lmodern}        % https://github.com/rstudio/rticles/issues/343
+\usepackage{url}            % simple URL typesetting
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+
+\usepackage{pictex}
+
+\usepackage{geometry}
+\geometry{a4paper, scale=0.8}
+
+\title{Report on Model-Robust Inference for Clinical Trials that Improve Precision by Stratified Randomization and Covariate Adjustment}
+\author{Zhihan Huang, Ruizhe Deng}
+\date{June 2022}
+
+% tightlist command for lists without linebreak
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% From pandoc table feature
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+A joint guidance document from the U.S. Food and Drug
+Administration and the European Medicines Agency (FDA and
+EMA 1998\cite{fda1998e9}) states that “Pretrial deliberations should identify those covariates and factors expected to have an important influence on the primary variable(s), and should consider how to account for these in the analysis to improve precision and to compensate for any lack of balance between treatment groups.” 
+Many recent regulatory guidance documents encourage consideration of baseline variables in order to improve precision in randomized trials. 
+As the most widely used method, simple randomization has been discussed by a rich literature and many statistical methods have been used to improve precision. However, there is a less concern about other forms of randomization, which is also of significant practical use.
+
+“Covariate-adaptive randomization” refers to randomization
+procedures that take baseline variables into account when
+assigning participants to study arms, which we mainly concern in this article. By contrast, the simple randomization ignores baseline variable and design assignment mechanism based on the whole population.
+Thus, covariate-adaptive randomization can be advantageous in minimizing imbalance and improving efficiency and has become a widely used approach in clinical trials.
+According to a survey by Lin, Zhu, and Su (2015)\cite{lin2015pursuit}, 183 out of their sample of 224 randomized clinical trials published in 2014 in leading medical journals used some form of covariate-adaptive randomization.
+
+We only consider the following two types of covariate-adaptive randomization since they are the most frequently implemented methods in clinical trials: stratified randomization and biased-coin randomization.
+Specific procedure and details about these two randomization methods will be given in the following part.
+
+In the preceding statistical analyses at the end of trials, adjusting for stratification variables is recommended by literature for its advantages over simple randomization.
+However, there exist two main problems in the previous study.
+
+First, most of the studies do not reliably carry out theoretical reasons for the recommendation. 
+According to Kahan and Morris (2012)\cite{kahan2012improper}, among 65 published trials from major medical journals from March to May 2010 , 41 of them implemented covariate-adaptive randomization (among which 29 used stratified randomization), but only 14 adjusted in the primary analysis for the variables used in the randomization procedure.
+
+Second, many results on how to conduct the primary efficacy analysis in trials that use stratified randomization require extra assumption about the model. 
+The theorem in this article extend the conclusion when there is random missing data or existing missing mechanism.
+
+For trials using stratified or biased-coin randomization, it was an open problem to determine the large sample properties of causal estimators. 
+Under regularity conditions, the writers prove that a large class of estimators is consistent and asymptotically normally distributed in randomized trials that use stratified or biased-coin randomization, and extend the formula for computing their asymptotic variance in simple randomization to other randomization methods. 
+This class of estimators consists of all regular M-estimators for binary and continuous outcomes and Kaplan– Meier (K-M) estimator (Kaplan and Meier 1958\cite{kaplan1958nonparametric}) for time-to-event outcomes.
+In brief, the theorems imply that under standard regularity conditions, whenever an estimator in our class is consistent and asymptotically normally distributed under simple randomization, then it is consistent and asymptotically normally distributed under stratified (or biased-coin) randomization.
+Also, the new asymptotic variance function can be calculated by a simple transformation.
+
+Simulations and clinical trial analyses are made in the later section. 
+As we show in our data analyses, the addition of baseline variables beyond those used for stratified randomization can lead to substantial precision gains.
+
+In this article, the commonly used superpopulation inference framework is applied in estimation and no parametric assumptions are made before anlysis. As in the aforementioned work, we assume that the randomization procedure and analysis method have been completely specified before the trial starts, as is typically required by regulators.
+
+\section{Randomization Procedures}
+In this section, we will specify the randomization procedures concerned in the article including simple randomization, stratified randomization and biased coin randomization, then briefly explain their properties.
+
+First consider simple randomization, which assigns study arms $A_1, . . . ,A_n$ by independent Bernoulli draws each with fixed probability $\pi$ of being 1, for example, using a random number generator. 
+By design, the draws are independent of each other and of all participant characteristics measured before randomization or not impacted by randomization. Therefore, we have that $(A_1, . . . ,A_n)$ is independent of the full data of participants $(W_1, . . . ,W_n)$, and also, under assumptions below, the observed data $O_1, . . . ,O_n$ are independent, identically distributed.
+It is the most commonly used method in practical experiments and there are many results about estimators under it in the preceding literature.  
+
+Next consider stratified or biased-coin randomization,where treatment allocation depends on predefined baseline strata, such as gender, age, site, disease severity, or combinations of these.
+In the article, we refer to the baseline strata that are used in the randomization procedure as “randomization strata.”
+The baseline stratum of participant $i$ is denoted by a categorical variable $S_i$ taken value in the set $S = \{ 1,...,K\}$ donates all $K$ randomization strata.
+In stratified or biased-coin randomization, we try to achieve balance in each stratum instead of in the whole population; that is, the proportion of participants assigned to the treatment arm in each stratum is targeted to the prespecified proportion $\pi \in (0,1)$.
+
+We use "stratified permuted block randomization" in Zelen (1974)\cite{zelen1974randomization} as the definition of stratified randomization.
+It uses permuted blocks to assign treatment. 
+For each randomization stratum, a randomly permuted block with fraction $\pi$ 1’s (representing treatment) and $(1-\pi)$ 0’s (representing control) is used for sequential allocation.
+When a block is exhausted, a new block is used.
+This procedure repeats until completing the assignment of one stratum, then turn to the next stratum.
+When the number of participants in each stratum is large enough, the balance is approximately achieved.
+
+Biased-coin randomization was defined in Efron (1971)\cite{efron1971forcing}. It can be applied when $\pi = 0.5$ and it allocates participants sequentially by the following rule for $k =1, . . . , n$:
+\begin{align}
+    P&(A_k=1|S_1,...S_k,A_1,...A_{k-1})\nonumber\\
+    &=
+    \begin{cases}
+    0.5, &\mathrm{if} \sum_{i=1}^{k-1}(A_i-0.5)I\{S_i=S_k\}=0\\
+    \lambda, &\mathrm{if} \sum_{i=1}^{k-1}(A_i-0.5)I\{S_i=S_k\}<0\\
+     1-\lambda, &\mathrm{if} \sum_{i=1}^{k-1}(A_i-0.5)I\{S_i=S_k\}>0,
+    \end{cases}\nonumber
+\end{align}
+where $\lambda \in (0.5,1]$, I{Z} is the indicator function and by convention the first participant is assigned with probability 0.5 to each arm. 
+Our results for biased-coin randomization assume that $\pi =0.5$.
+Intuitively, for each stratum, when a new participant joining, we compare the number of participants in treatment and control group. 
+If there are more people in the treatment group, the new one will be assigned to control group with a  higher probability.
+Otherwise, the probability of being assigned to treatment group is higher.
+
+\section{Proof}
+The main conclusions of the article focus on two kinds of outcomes: the real-value outcomes and the time-to-events outcomes. Theorem 1 shows the properties of  M-estimator of real-value outcomes under simple randomization and stratified randomization (or biased-coin). Theorem 2 extends the conclusions to time-to-event data and commonly used Kaplan-Meier estimator under  simple randomization and stratified randomization (or biased-coin).
+
+\subsection{Real-Value Outcome}
+First, we define the full data vector $W_i = (Y_i(0),Y_i(1),M_i(0),M_i(1),X_i)$ and observed data vector $O_i=(A_i,X_i,Y_i M_i,M_i)$. The product $Y_i M_i$ is used in the data to encode that whenever the outcome
+is missing ($M_i = 0$), the outcome value $Y_i$ is not available
+in $O_i$. We use $E$ to donate expectation with respect to full data distribution $P$ and $E^*$ to donate expectation with respect to observed data distribution $P^*$. Consistency assumption is always made that $Y = A Y(1)+(1-A)Y(0)$ and $M = A M(1)+(1-A)M(0)$.
+
+For real-value outcomes, like binary and continuous outcomes, our goal is to estimate a population parameter $\Delta^*$, which is a contrast between the marginal distribution of $Y(1)$ and $Y(0)$. For example, $\Delta^*$ can be the average treatment effect $E(Y(1)-Y(0))$. Here we consider M-estimators of $\Delta^*$. We define the M-estimator $\hat{\theta}=(\hat{\Delta},\hat{\beta})$ to be solution of estimating equation:
+\begin{align}\label{estiamte eq}
+    \sum_{i=1}^n \psi(A_i,X_i,Y_i,M_i;\theta)=0,
+\end{align}
+where $\Delta \in \mathbb{R}$ is the parameter of interest and $\beta \in \mathbb{R}^p$ is a column vector of  nuisance parameters. We assume that $\psi$ does not depend on the outcome $Y$ when $M=0$ (since it implies that $Y$ is missing).
+
+For real-value outcomes, we make the following assumptions on the distribution of the full data vector $\{ W_1,W_2...,W_n\}$:\\
+\textbf{Assumption 1.}(1) $W_i,i=1,2...,n$ are i.i.d. samples from an unknown joint distribution
+$P$.
+
+(2)Missing at random: $M(a) \Vbar Y(a) \mid X$ for each arm $a \in \{0, 1\}$.
+
+Here we make the formal statement of Theorem 1.
+
+\textbf{Theorem 1.} Assume the regular conditions of the estimating equations.
+We use $\hat{\Delta}$ to donate the M-estimator of $\Delta^{*}$. Then under simple, stratified, or biased-coin randomization, we have consistency,
+that is $\hat{\Delta} \rightarrow \Delta^{*}$ in probability and asymptotic linearity, that is,
+\begin{align}\label{as linear}
+    \sqrt{n}(\hat{\Delta} - \Delta^{*})=\frac{1}{\sqrt{n}}\sum_{i=1}^n IF(A_i,X_i,Y_i,M_i)+o_p(1)
+\end{align}
+where the influence function $IF(A,X,Y,M)$ is the first entry of $-B^{-1}\psi(A,X,Y,M;\theta^{*})$ for $B=E^{*}\Big[\frac{\partial}{\partial\theta}\psi(A,X,Y,M;\theta)\Big|_{\theta=\theta^*}\Big]$.
+
+For stratified and biased-coin randomization, $\sqrt{n}(\hat{\Delta} - \Delta^{*}) \stackrel{d}{\rightarrow}N(0,V)$ for 
+\begin{align}\label{real-value variance}
+    V=\widetilde{V}-\frac{1}{\pi(1-\pi)}E^{*}\big[E^{*}[(A-\pi)IF(A,X,Y,M)|S]^2\big],
+\end{align}
+where $\widetilde{V}=E^{*}[IF(A,X,Y,M)^2]$ is the asymptotic variance
+under simple randomization.
+
+
+$Proof.$ Under simple randomization, the results of Theorem 1 have been proved
+in Section 5 of van der Vaart (1998)\cite{van1998asymptotic}, Theorem 5.41, which holds for independent, identically distributed
+data. Use Taylor expansion of the function $\psi$ at the neighborhood of $\hat{\Delta}$.
+
+Hence, it remains to prove Theorem 1 under stratified or
+biased-coin randomization, which we do below. The important difference between simple randomization and stratified randomization is that in stratified randomization, the study arm assignment of individual $i$, which is $A_i$ is dependent of the former individuals. Since in each strata, the individuals are assigned to treatment or control group one by one through a certain mechanism, the distribution of $A_i$ is affected by the former individuals. However, in each strata, the study arm assignment is independent of the full data vector $W_i$. We have
+\begin{align}
+    (A_1,...,A_n)\Vbar(W_1,...,W_n)\big|(S_1,...,S_n).
+\end{align}
+We can use this conclusion to derive properties of assignment in stratified randomization.
+
+$Properties.$ (1) For each strata $s$, fix the strata assignment $(S_1,...,S_n)$, we have 
+\begin{align}
+    \frac{1}{\sqrt{n}}\sum_{i=1}^n(A_i-\pi)I\{S_i=s\}\stackrel{P}{\rightarrow}0.
+\end{align}
+
+(2) Under stratified randomization, each observed data $O_i=(A_i,X_i,Y_i M_i,M_i)$ are identically distributed and $A_i$ is independent of $W_i$, for $i=1,...,n$, which means $P(A_i=1)=\pi$ still holds.
+
+The properties shows that for each individual, the stratified randomization is the same as the simple randomization and when the sample size $n$ is large enough, the distributions of study arm assignment $(A_1,...,A_n)$ in simple and stratified randomization tends to be the same.
+
+To simplify the notation, we define $\psi^{(a)}(\theta)=\psi(a,X,Y(a),M(A);\theta)$ and $\psi_{i}^{(a)}(\theta)=\psi(a,X_i,Y_i(a),M_i(A);\theta)$ for $a=0,1$ and $i=1,...,n$. Use the fact of consistency: 
+\begin{align}
+    Y_i&=Y_i(1)A_i+Y_i(0)(1-A_i),\nonumber\\
+    M_i&=M_i(1)A_i+M_i(0)(1-A_i)\nonumber,
+\end{align}
+the estimating equations can be re-written as 
+\begin{align}
+    \frac{1}{n}\sum_{i=1}^n \big(A_i \psi_{i}^{(1)}(\theta)+(1-A_i)\psi_{i}^{(0)}(\theta)\big) = \textbf{0}\nonumber,
+\end{align}
+and the true value of the model parameter $\theta^*$ is assumed to be the solution of 
+\begin{align}
+    \pi E\big[\psi_{i}^{(1)}(\theta)\big]+(1-\pi)E\big[\psi_{i}^{(0)}(\theta)\big] = \textbf{0}\nonumber.
+\end{align}
+Like the simple randomization scenario, we apply multivariate Taylor expansion on the function $\sum_{i=1}^n \big(A_i \psi_{i}^{(1)}(\theta)+(1-A_i)\psi_{i}^{(0)}(\theta)\big)$ around the point $\theta=\theta^*$:
+\begin{align}
+    \textbf{0}=&\frac{1}{n}\sum_{i=1}^n \big(A_i \psi_{i}^{(1)}(\hat{\theta})+(1-A_i)\psi_{i}^{(0)}(\hat{\theta})\big)\nonumber\\
+    =&\frac{1}{n}\sum_{i=1}^n \big(A_i \psi_{i}^{(1)}(\theta^*)+(1-A_i)\psi_{i}^{(0)}(\theta^*)\big)+\frac{1}{n}\sum_{i=1}^n \big(A_i \dot\psi_{i}^{(1)}(\theta^*)+(1-A_i)\dot\psi_{i}^{(0)}(\theta^*)\big)(\hat{\theta} -\theta^*)\nonumber\\
+    &+\frac{1}{2}(\hat{\theta} -\theta^*)^{t}\frac{1}{n}\sum_{i=1}^n \big(A_i \ddot\psi_{i}^{(1)}(\widetilde{\theta})+(1-A_i)\ddot\psi_{i}^{(0)}(\widetilde{\theta})\big) (\hat{\theta} -\theta^*)\nonumber.
+\end{align}
+
+According to regularity conditions, $\Vert \ddot\psi_{i}^{(a)}(\theta)\Vert$ is dominated by an integrable function $v(X_i,Y_i(a),M_i(a))$. Thus, we have 
+\begin{align}
+    \Vert \frac{1}{n}\sum_{i=1}^n \big(A_i \ddot\psi_{i}^{(1)}(\widetilde{\theta})+(1-A_i)\ddot\psi_{i}^{(0)}(\widetilde{\theta})\big) \Vert = O_p(1)\nonumber.
+\end{align}
+
+Then using the conditional independence of assignment mechanism and other factors, we can show that
+\begin{align}\label{first order}
+    \frac{1}{n}\sum_{i=1}^n \big(A_i \dot\psi_{i}^{(1)}(\theta^*)+(1-A_i)\dot\psi_{i}^{(0)}(\theta^*)\big) \stackrel{P}{\rightarrow}\pi E[\dot\psi^{(1)}(\theta)]+(1-\pi)E[\dot\psi^{(0)}(\theta)].
+\end{align}
+Recalling that we set
+\begin{align}
+    B&=E^{*}\Big[\frac{\partial}{\partial\theta}\psi(A,X,Y,M;\theta)\Big|_{\theta=\theta^*}\Big]\nonumber\\
+    &=E^{*}(E^{*}[\dot\psi(\theta^*)|A])\nonumber\\
+    &=\pi E[\dot\psi^{(1)}(\theta)]+(1-\pi)E[\dot\psi^{(0)}(\theta)]\nonumber,
+\end{align}
+the equation (\ref{first order}) can be tr-written as
+\begin{align}
+    \frac{1}{n}\sum_{i=1}^n \big(A_i \dot\psi_{i}^{(1)}(\theta^*)+(1-A_i)\dot\psi_{i}^{(0)}(\theta^*)\big) = B+o_p(1)\nonumber.
+\end{align}
+After calculate the remainder, we get \begin{align}
+    \sqrt{n}(\hat{\theta}-\theta^*)=-B^{-1}\frac{1}{\sqrt{n}}\sum_{i=1}^n \psi(A_i,X_i,Y_i,M_i;\theta^*)+o_p(1)\nonumber.
+\end{align}
+Replace $\theta$ with a specific parameter $\Delta$ and we complete the proof of asymptotic linearity.
+
+Then we turn to the asymptotic variance. Under simple randomization, using center limit theorem and the fact that $A_i, i=1,...,n$ are independent, we get
+\begin{align}
+    \mathrm{Var}(\sqrt{n}(\hat{\Delta}-\Delta^*))\rightarrow&\frac{1}{n}\sum_{i=1}^n \mathrm{Var}(IF(A_i,X_i,Y_i,M_i))\nonumber\\
+    &=E^{*}[IF(A,X,Y,M)^2]=\widetilde{V}.\nonumber
+\end{align}
+
+Under stratified randomization, the asymptotic variance has a different form because of the dependence of influence functions. To simplify the notation, we donate $IF(a)=IF(a,X,Y(a),M(a))$ and $IF_i(a)=IF(a,X_i,Y_i(a),M_i(a))$ for $a=0,1$ and $i=1,...,n$. Using property (1), the equation(\ref{as linear}) can be re-written as
+\begin{align}
+    \sqrt{n}(\hat{\Delta} - \Delta^{*})=\frac{1}{\sqrt{n}}\sum_{i=1}^n \big[A_i(IF_i(1)-E[IF(1)])+(1-A_i)(IF_i(0)-E[IF(0)])\big]+o_p(1).\nonumber
+\end{align}
+We assume that $\sqrt{n}(\hat{\Delta} - \Delta^{*})\stackrel{d}{\rightarrow} N(0,V)$. Using conditional variance formula: $Var(Y) = Var(E(Y|X))+E(Var(Y|X))$, we have the expression
+\begin{align}
+    V=&\pi Var(IF(1)-E[IF(1)|S)+(1-\pi)Var(IF(0)-E[IF(0)|S)\nonumber\\
+    &+Var(E[\pi IF(1)+(1-\pi)IF(0)|S])\nonumber\\
+    =&\pi E[IF(1)^2]+(1-\pi)E[IF(0)^2]-\pi(1-\pi)E\big[E[IF(1)-IF(0)|S]^2\big]\nonumber\\
+    =&\widetilde{V}-\pi(1-\pi)E\big[E[IF(1)-IF(0)|S]^2\big],\nonumber
+\end{align}
+and that
+\begin{align}
+    &E^*\Big[\frac{A-\pi}{\pi(1-\pi)}IF(A,X,Y,M)|S\Big]\nonumber\\
+    =&E^*\Big[E^*\Big[\frac{A-\pi}{\pi(1-\pi)}IF(A,X,Y,M)|A\Big]|S\Big]\nonumber\\
+    =&E[IF(1)-IF(0)|S].\nonumber
+\end{align}
+Combining all the conclusions above, we have
+\begin{align}\label{var}
+     V=\widetilde{V}-\frac{1}{\pi(1-\pi)}E^{*}\big[E^{*}[(A-\pi)IF(A,X,Y,M)|S]^2\big].
+\end{align}
+
+Theorem 1 implies that whenever an M-estimator $\hat{\Delta}$
+is consistent and asymptotically normally distributed under simple randomization, then it is consistent and asymptotically normally distributed under stratified (or biased-coin) randomization with equal or smaller asymptotic variance, which is more powerful in estimation. Also, its influence function is the same regardless of whether data are generated under simple, stratified, or biased-coin randomization.
+
+In order to construct confidence intervals (CIs) and perform
+hypothesis tests, one can use the following estimator for the
+asymptotic variance $\widetilde{V}$ and $V$. 
+
+For simple randomization and corresponding M-estimator, since $\Delta$ is the first component of model parameter $\theta$, we can use the sandwich estimator $\widetilde{V}_n$, defined as the first entry of
+\begin{align}
+    \widetilde{V}_n=\Big\{E_n\big[\frac{\partial \psi}{\partial \theta}\Big|_{\theta=\hat{\theta}}\big]\Big\}^{-1} \Big\{E_n\big[\psi \psi^{t}\Big|_{\theta=\hat{\theta}}\big]\Big\}
+    \Big\{E_n\big[\frac{\partial \psi}{\partial \theta}\Big|_{\theta=\hat{\theta}}\big]\Big\}^{-1,t},\nonumber
+\end{align}
+where $E_n$ denotes expectation with respect to the empirical distribution of the observed data.
+
+For stratified (or biased-coin) randomization, equation (\ref{var}) can be used to construct variance estimator $\hat{V}$:
+\begin{align}
+    \hat{V}=\widetilde{V}_n-\frac{1}{\pi(1-\pi)}E_n\big[E_n[(A-\pi)IF(A,X,Y,M)|S]^2\big].\nonumber
+\end{align}
+Then a CI for $\Delta^*$ can be constructed based on the normal approximation with variance $\hat{V}/n$, which we used in our simulations and clinical trial study.
+
+Many estimators used in
+clinical trials can be expressed as solutions to estimating equations (\ref{estiamte eq}) for an appropriately chosen estimating function $\psi$. 
+ 
+For example, for binary outcome, the commonly used estimator is standardized logistic regression estimator:$\Delta_{log}$. We assume that there is no missing data in this model.
+It is calculate by first fitting model $P(Y=1|A,X)= \mathrm{expit}(\beta_0+\beta_A A+\beta_{X}^{t}X)$, where $\mathrm{expit}(x)=1/(1+e^{-x})$, and getting the ML estimates $(\hat{\beta}_0,\hat{\beta}_A,\hat{\beta}_X)$.
+Then the logistic regression estimator $\Delta_{log}$ is defined as the solution to estimating equations:
+\begin{align}
+    \psi(A,X,Y,M;\theta) = \left(
+    \begin{array}{c}
+    \mathrm{expit}(\beta_0+\beta_A A+\beta_{X}^{t}X)-\mathrm{expit}(\beta_0+\beta_{X}^{t}X)-\Delta        \\
+    (Y-\mathrm{expit}(\beta_0+\beta_A A+\beta_{X}^{t}X))Z     
+    \end{array}
+    \right),\nonumber
+\end{align}
+where $Z=(1,A,X^{t})^{t}$. It is equivalent to the common definition that $\Delta_{log} = \frac{1}{n}\sum_{i=1}^n (\mathrm{expit}(\hat{\beta}_0+\hat{\beta}_A A+\hat{\beta}_{X}^{t}X)-\mathrm{expit}(\hat{\beta}_0+\hat{\beta}_{X}^{t}X))$.
+ 
+When some outcomes are missing and the missing at random assumption holds, also the outcomes can be either continuous or binary, one extension is DR-WLS estimator.
+This estimator is calculated by first fitting the logistic regression model for missing mechanism:
+\begin{align}\label{missing model}
+    P(M=1|A,X)=\mathrm{expit}(\alpha_0+\alpha_A A+\alpha_{X}^{t}X)
+\end{align}
+and getting the ML estimates $(\hat{\alpha}_0,\hat{\alpha}_A,\hat{\alpha}_{X})^{t})$. Next, fitting the generalized linear model(GLM):
+\begin{align}\label{outcome model}
+    E[Y|A,X]=g^{-1}(\beta_0+\beta_A A+\beta_{X}^{t}X),
+\end{align}
+with weights $1/\mathrm{expit}(\hat{\alpha}_0+\hat{\alpha}_A A_i+\hat{\alpha}_{X})^{t}X_i)$ for individual $i$.
+Here $g^{-1}$ is the inverse link function of the model, which can be chosen appropriately for different outcomes.
+For example, $g^{-1}(x)=\mathrm{expit}$ for binary outcomes and $g^{-1}(x)=x$ for continuous outcomes.
+While fitting the model, we can only use the data with $M_i=1$ (non-missing), so it shares the same idea with inverse propensity score(IPW) estimator\cite{robins1994estimation}.
+
+Combining the procedure above, the DR-WLS estimator can be written as the solution to the estimating equations:
+\begin{align}
+    \psi(A,X,Y,M;\theta) = \left(
+    \begin{array}{c}
+    g^{-1}(\beta_0+\beta_A A+\beta_{X}^{t}X)-g^{-1}(\beta_0+\beta_{X}^{t}X)-\Delta        \\
+    \frac{M}{\mathrm{expit}(\hat{\beta}_0+\hat{\beta}_A A+\hat{\beta}_{X}^{t}X)}(Y-g^{-1}(\beta_0+\beta_A A+\beta_{X}^{t}X))Z   \\
+    (M-\mathrm{expit}(\alpha_0+\alpha_A A+\alpha_{X}^{t}X)Z
+    \end{array}
+    \right).\nonumber
+\end{align}
+It is equivalent to the direct definition that
+\begin{align}
+    \hat{\Delta}_{DR-WLS}=\frac{1}{n}\sum_{i=1}^n (g^{-1}(\beta_0+\beta_A A+\beta_{X}^{t}X)-g^{-1}(\beta_0+\beta_{X}^{t}X)).\nonumber
+\end{align}
+
+The DR-WLS estimator can be generalized to allow the addition
+of interaction terms in the model, while it can still be treated as a regular M-estimator in the same way.
+
+The DR-WLS estimator is widely used since some simple estimators can be regarded as special cases of it, for example ANCOVA estimator and logistic regression estimator. As an extention of these robust estimator, the DR-WLS estimator is doubly robust estimator, that is, if we take the overlap assumption for missing mechanism:
+\begin{align}
+    \mathrm{inf}_{(a,x)\in(\mathcal{A},\mathcal{X})}P(M=1|a,x)>0,\nonumber
+\end{align}
+where $(\mathcal{A},\mathcal{X})$ is the support of $(A,X)$, then we have the estimator ids consistent and asymptotically normal if at least one of model (\ref{missing model}),(\ref{outcome model}) is correctly specified.
+
+For the DR-WLS estimator, the expression (\ref{real-value variance}) can be used to calculate the asymptotic variance under stratified and biased-coin randomization. However, asymptotic variance will not necessarily decrease because of stratification.
+The influence function in the expression can be calculate from Theorem 5.21 of van der Vaart (1998). We have
+\begin{align}\label{variance decrease}
+    \widetilde{V}-V=\frac{(1-2\pi)}{\pi^{3}(1-\pi)^{3}}E^*\bigg[E^*\Big[\frac{AM(Y-h(A,X))}{e(A,X)}\Big|S\Big]^{2}\bigg],
+\end{align}
+where $h(A,X)=g^{-1}(\underline{\beta}_0+\underline{\beta}_A A+\underline{\beta}_{X}^{t}X)$ and $e(A,X)=\mathrm{expit}(\underline{\alpha}_0+\underline{\alpha}_A A+\underline{\alpha}_{X}^{t}X)$ and $\underline{\alpha}_0,\underline{\alpha}_A,\underline{\alpha}_X,\underline{\beta}_0,\underline{\beta}_A,\underline{\beta}_X$ are the probability limits of the ML estimator. Use equation (\ref{variance decrease}), we can find some sufficient conditions for $\widetilde{V}-V=0$. 
+
+\textbf{Corollary 1.} If any of the conditions (a)–(c) below holds, then under simple, stratified, or biased-coin randomization, the estimator is consistent and asymptotically normally distributed with asymptotic variance $\widetilde{V}=V$; furthermore, the sandwich variance estimator is consistent. Conditions:\\
+(a) $\pi=0.5$;\\
+(b) the outcome regression model includes indicators for the randomization strata and also treatment-by-randomization-strata interaction terms;\\
+(c) the outcome regression model is correctly specified.
+
+It reveals that in many cases, the stratified method will not improve the asymptotic power of DR-WLS estimator, so sandwich estimator can be used in all these randomization methods. But for finite sample data analysis, adjusted estimator may still show some superiority. See real data analysis.
+
+
+\subsection{Time-to-Event Outcome}
+For time to event outcomes, since we need to estimate a survival function rather than a real
+number or a vector, the theorem and proof above do not
+apply. Thus, we use slightly modified notation
+and assumptions compared to above.
+
+As in most cases, the outcomes is assumed to be right-censored, which means that the true survival times will always be equal to or greater than the observed survival time. We use notation analogous as the system in Theorem 1. Let $Y_i$ denote the failure time and $M_i$
+denote the censoring time of individual $i$. Other variables including $A_i$,$X_i$ and the potential outcomes $Y_i(a)$,$M_i(a)$ for $a = 0, 1$ are defined analogously as before.
+
+For each participant $i\in\{1,...,n\}$, we define the full data vector $W_i = (Y_i(0),Y_i(1),M_i(0),M_i(1),X_i)$ and observed data vector $O_i=(A_i,X_i,U_i,\delta_i)$, where $U_i =\mathrm{min}\{Y_i,M_i\}$ and $\delta_i=I\{Y_i<M_i\}$. $U_i$ is the observed time and $\delta_i$ is the indicator of missing data (when $\delta_i=1$, the event is observed and when $\delta_i =0$, censoring happens and the data is missing). We further define a restriction time $\tau$ such that the time window $t\in[0,\tau]$ is of interest. We use $E$ to donate expectation with respect to full data distribution $P$ and $E^*$ to donate expectation with respect to observed data distribution $P^*$.
+
+The goal of our analysis is to estimate the survival function curve $\{S_0^{(a))}(t):t\in[0,\tau]\}$ for each $a=0,1$, where the survival function in this causal study is defined as $S_0^{(a)}(t)=P(Y(a)>t)$. This
+represents the survival curve if everyone in the study population were assigned to study arm $a$.
+
+Here we consider the non-parametric estimators of survival functions. One commonly used method for survival analysis is the Kaplan-Meier
+estimator $\hat{S}_n^{(a)}(t)$:
+\begin{align}
+    \hat{S}_n^{(a)}(t)=\prod_{j:T_j \leq t}\Big( 1-\frac{\sum_{i=1}^n \delta_i I\{A_i=1\}I\{U_i=T_j\}}{\sum_{i=1}^n I\{A_i=1\}I\{U_i\geq T_j\}} \Big)
+\end{align}
+Unlike M-estimator we consider above, the K-M estimator does not adjust for any baseline
+variables. Thus its variance under simple randomization is typically
+different than under stratified or biased-coin randomization,
+and this is not accounted for by standard methods for estimating
+its variance. Specifically, the standard method for variance estimation will
+typically overestimate the K-M variance under stratified
+or biased-coin randomization, leading to wasted power.
+
+Here we will use Theorem to show the properties of K-M estimator under stratified (or biased-coin) randomization compared with simple randomization.
+The following assumption is made in place of Assumption 1:\\
+\textbf{Assumption 2.}:(1) $W_i,i=1,2...,n$ are i.i.d. samples from an unknown joint distribution
+$P$.
+
+(2)Censoring at random: $M(a) \Vbar Y(a)$ for each arm $a \in \{0, 1\}$. 
+
+(3)$P(\mathrm{min}\{Y(a),M(a)\} >\tau)>0$ for each $a=0,1$.
+
+Compared with Assumption 1, Assumption 2(1) is the same as Assumption 1(1), and Assumption 2(2) assumes censoring completely at random instead of missing at random. This modification
+of the assumption on missing data is to adjust
+the K-M estimator and its consistency requirement. Assumption 2(3) is often made in survival
+analysis,which states that there is a positive probability that both
+the failure time and censoring time occur after $\tau$ (under each study arm assignment).
+
+Here we make the formal statement of Theorem 2.
+
+\textbf{Theorem 2.} Given Assumption 2, under simple, stratified, or biased-coin randomization, we have for each $t\in [0,\tau]$, $a=0,1$ that
+\begin{align}\label{if sur}
+    \sqrt{n}(\hat{S}_n^{(a)}(t)-S_0^{(a)}(t))=\frac{1}{\sqrt{n}}\sum_{i=1}^n IF^{(a)}(A_i,U_i,\delta_i;t)+o_{p^*}(1)
+\end{align}
+where $o_{p^*}(1)$ represents a sequence of random variables converging
+to 0 in probability uniformly over $t\in [0,\tau]$ and $IF^{(a)}(A_i,U_i,\delta_i;t)$ is the corresponding influence function which will be given in the proof.
+
+For stratified and biased-coin randomization, the random process $\{\sqrt{n}(\hat{S}_n^{(a)}(t)-S_0^{(a)}(t)): t\in [0,\tau]\}$ converges weakly to a mean 0, tight Gaussian process with covariance function $V^{(a)}(t,t^{\prime})$, which has the following property: for any $t\leq \tau$,
+\begin{align}
+    V^{(a)}(t,t)=\widetilde{V}^{(a)}(t,t)-\frac{1}{\pi(1-\pi)}E^{*}\big[E^{*}[(A-\pi)IF^{(a)}(A,U,\delta;t)|S]^2\big],
+\end{align}
+where $\widetilde{V}^{(a)}(t,t)$ is the asymptotic variance under simple randomization. The concrete form of $V^{(a)}(t,t^{\prime})$ will be given in the proof.
+
+$Proof.$ First we introduce notations used in survival analysis.
+
+For each $a=0,1$ and $t\in [0,\tau]\}$, define counting process $N(t) = I\{U\leq t,\delta=1\}$ and $N^{(a)}(t) = I\{U(a)\leq t,\delta(a)=1\}$.
+Then the cumulative hazard function $\Lambda^{(a)}(t)$:
+\begin{align}
+    \Lambda^{(a)}(t)=E\Big[\int_{0}^{t} \frac{d N^{(a)}(t^{\prime})}{P(U(a)\geq t^{\prime})} \Big],\nonumber
+\end{align}
+and the martingale $L^{(a)}(t)$:
+\begin{align}
+    L^{(a)}(t)=N^{(a)}(t)-\int_{0}^{t}I\{U(a)\geq t^{\prime}\} d \Lambda^{(a)}(t^{\prime}),\nonumber
+\end{align}
+the martingale transformation $H^{(a)}(t)$:
+\begin{align}
+    H^{(a)}(t)=\int_{0}^{t}\frac{d L^{(a)}(t^{\prime})}{(1-\Delta \Lambda^{(a)}(t^{\prime}))P(U(a)\geq t^{\prime})},\nonumber
+\end{align}
+where $\Delta \Lambda^{(a)}(t) = \Lambda^{(a)}(t)-\Lambda^{(a)}(t-)$ accounting for the discontinuous point. Then we define the corresponding non-parametric estimator of these function:
+\begin{align}\label{sur estimator}
+    \hat{\Lambda}^{(a)}(t)=&\int_{0}^{t} \frac{\sum_{i=1}^n I\{A_i=a\}d N_i(t^{\prime})}{\sum_{i=1}^n I\{A_i=a\}I\{U_i\geq t^{\prime}\}}\\
+    \Delta\hat{\Lambda}^{(a)}(t)=&\frac{\sum_{i=1}^n I\{A_i=a\}I\{U_i=t,\delta_i=1\}}{\sum_{i=1}^n I\{A_i=a\}I\{U_i\geq t\}},
+\end{align}
+which we get from replacing the expectation with respect to true distribution by the empirical distribution $\mathbb{P}_n$.
+
+
+
+For simple randomization, it is a classical properties of K-M estimator. We refer to some textbooks, Chapter 3 of Fleming and Harrington (1991)\cite{fleming2011counting} and and Chapter 4 of Kosorok (2008)\cite{kosorok2008introduction}.
+
+For stratified randomization, we first prove that $\hat{\Lambda}^{(a)}(t)$ is asymptotically linear. Re-writing the expression of $\hat{\Lambda}^{(a)}(t)$:
+\begin{align}
+    &\hat{\Lambda}^{(a)}(t)-\Lambda^{(a)}(t)\nonumber\\
+    =&\int_{0}^{t} \frac{\mathbb{P}_n I\{A_i=a\}d L^{(a)}(t^{\prime})}{\mathbb{P}_n I\{A_i=a\}I\{U(a)\geq t^{\prime}\}}-\int_{0}^{t}I\{\mathbb{P}_n I\{A=a\}I\{U(a)\geq t^{\prime}\}=0\}d\Lambda^{(a)}(t^{\prime})\nonumber\\
+    =& \frac{1}{n}\sum_{i=1}^n \frac{I\{A_i=a\}}{a\pi+(1-a)(1-\pi)}\int_{0}^{t}\frac{d L_{i}^{(a)}(t^{\prime})}{P(U(a)\geq t^{\prime})}+I_n(t).\nonumber
+\end{align}
+Then bounding the integrand of the remainder with $o_p^{*}(1/\sqrt{n})$ and using the fact from Assumption 2(3) that $\Lambda^{(a)}(t)$ is bounded, we can prove that 
+\begin{align}
+    I_n(t) \leq  o_p^{*}(1/\sqrt{n}) \Lambda^{(a)}(\tau) =o_p^{*}(1/\sqrt{n}),\nonumber
+\end{align}
+which implies the asymptotic linearity of $\hat{\Lambda}^{(a)}(t)$.
+
+Define a Hadamard differentiable map $\psi(f)(t) = \prod_{0\leq t^{\prime}\leq t} (1+ d f(t^{\prime}))$. Then use the relationship between hazard function and survival function, we can show that $ \sqrt{n}(\hat{S}_n^{(a)}(t)-S_0^{(a)}(t))=\psi_{-\Lambda}^{\prime}(-\sqrt{n}(\hat{\Lambda}^{(a)}(t)-\Lambda^{(a)}(t))+o_p^{*}(1)$. Through the calculation of $\psi^{\prime}$, we have the expression:
+\begin{align}
+    \sqrt{n}(\hat{S}_n^{(a)}(t)-S_0^{(a)}(t))=-\frac{a}{\sqrt{n}}\sum_{i=1}^n\frac{I\{A=a\}}{a\pi+(1-a)(1-\pi)}S_0^{(a)}(t)H^{(a)}(t)+o_p^{*}(1),\nonumber
+\end{align}
+which proves the asymptotic linearity claimed in Theorem 2 and shows that
+\begin{align}\label{sur if}
+    IF^{(a)}(A,U,\delta;t)=-\frac{I\{A=a\}}{a\pi+(1-a)(1-\pi)}S_0^{(a)}(t)H^{(a)}(t).
+\end{align}
+
+In application, we mainly focus on the asymptotic variance function of survival function at one fixed point to construct confidence intervals. For simple randomization, this function has been calculate in Zhang (2015):
+\begin{align}
+    \widetilde{V}^{(a)}(t,t)=\frac{S_0^{(a)}(t)^2}{a\pi+(1-a)(1-\pi)} Var(H^{(a)}(t)).\nonumber
+\end{align}
+Follow use the same technique in Theorem 1, we have
+\begin{align}
+     \widetilde{V}^{(a)}(t,t)-V^{(a)}(t,t)=&\frac{1}{\pi(1-\pi)}E^{*}\big[E^{*}[(A-\pi)IF^{(a)}(A,U,\delta;t)|S]^2\big]\\
+     \geq &0,\nonumber
+\end{align}
+which implies that stratified randomization will give a narrower confidence band in estimation.
+
+From the point view of random processes, $\widetilde{V}^{(a)}(t,t)-V^{(a)}(t,t)$ is in proportion to sum of the product of the martingale $H^{(a)}(t)$ and the known term $S_0^{(a)}(t)$. Thus, the properties of stratified randomization can be used to treat the dependence term and then use the martingale central limit theorem to get the limit process and show it is a tight Gaussian process. The details of the usage of martingale central limit theorem are shown in Bugni (2018)\cite{bugni2018inference} and (2019)\cite{bugni2019inference}. The covariance function of the tight Gaussian process are given below:
+\begin{align}\label{covar}
+    V^{(a)}(t,t^{\prime})=S_0^{(a)}(t)S_0^{(a)}(t^{\prime})\Big\{&\frac{1}{a\pi+(1-a)(1-\pi)}E[Cov(H^{(a)}(t),H^{(a)}(t^{\prime})|S)]\\
+    &+Cov(E[H^{(a)}(t)|S], E[H^{(a)}(t^{\prime})|S])  \Big\}.
+\end{align}
+
+In real data analysis, we need to estimate the covariate function from the data, especially the variance function $V^{(a)}(t,t)$ to obtain the confidence band. Like the real-value outcome senario, we use the plug-in estimator
+\begin{align}
+    \hat{V}^{(a)}(t,t)=\frac{\hat{S}_{n}^{(a)}(t)^2}{\pi_a}\Bigg[\hat{B}^{(a)}(t)-(1-\pi_a)\sum_{s\in\mathcal{S}}\hat{p}(s)\bigg(\frac{\sum_{i=1}^{n}I\{S_i=s\}\hat{H}_i^{(a)}(t)}{\sum_{i=1}^{n}I\{S_i=s\}}\bigg)^2\Bigg],\nonumber
+\end{align}
+where $\hat{S}_{n}^{(a)}(t)$ is the Kaplan-Meier estimator defined above and 
+\begin{align}
+    \pi_a&=\pi a + (1-\pi)(1-a),\nonumber\\
+    \hat{B}^{(a)}(t)&=\int_{0}^{t}\frac{\mathrm{d}\hat{\Lambda}^{(a)}(t^{\prime})}{\hat{P}(U(a)\geq t^{\prime})\{1-\Delta\hat{\Lambda}^{(a)}(t^{\prime})\}},\nonumber\\
+    \hat{H}_{i}^{(a)}(t)&=\int_{0}^{t}\frac{I\{A_i=a\}(\mathrm{d}N_i(t^{\prime})\mathrm{d}\hat{\Lambda}^{(a)}(t^{\prime}))-I\{U_i\geq t^{\prime}\})}{\pi_a\hat{P}(U(a)\geq t^{\prime})\{1-\Delta\hat{\Lambda}^{(a)}(t^{\prime})\}},\nonumber
+\end{align}
+with 
+\begin{align}
+    \hat{P}(U(a)\geq t) = \frac{\sum_{i=1}^{n}I\{A_i=a\}I\{U_i\geq t\}}{\sum_{i=1}^{n}I\{A_i=a\}}\nonumber
+\end{align}
+and other variables are defined above. $\hat{V}^{(a)}(t,t)$ is a consistent estimator of $V^{(a)}(t,t)$. For real data with sufficient data points, it is a reliable estimator to construct confidence band.
+
+\section{Real Data Analysis}
+
+\subsection{Binary and Continous Outcomes}
+
+We have tried to reproduce the result of this paper on the publicly available NIDA-CTN-0003, NIDA-CTN-0030 and NIDA-CTN-0044 datasets. The code for calculating the estimators is available on their website \hyperlink{ https://github.com/BingkaiWang/covariate-adaptive}{https://github.com/BingkaiWang/covariate-adaptive}, whose validity relies on Assumption 1. 
+
+Now we verify the two statements of Assumption 1. The first statement states that $W_i$ are i.i.d. samples from an unknown population $P$, which is always assumed correct. The second statement is the "missing at random" assumption. In all three trials, the outcome of interest is the existence or the proportion of positive urine tests. By assuming missing at random, we assume that conditional on all of the covariates and given the treatment arm, whether a patient misses the urine test does not rely on the result of the test. The data of CTN-0030 shows that in those who were not performed a urine drug screen on and specified a reason, "participant was unable to provide sample" is mostly chosen. Therefore, as data from observational studies suggest that approximately 10\% of episodes of urinary retention might be attributable to the use of concomitant medication\cite{verhamme2018}, the assumption can be seen as suitable.
+
+Our general setting follows the original paper. In all cases, the target of inference is the average treatment effect defined as E[Y(1)] - E[Y(0)]. All missing baseline values were imputed by the median for continuous variables and mode for binary or categorical variables. The only estimator in Table 1 that adjusts for missing outcomes is the DR-WLS estimator; all other estimators omit data from the participants with missing outcomes. Negative (positive) estimates are in the direction of clinical benefit (harm). For all estimators presented in Table 1, the 95\% CI is constructed using the normal approximation with variance calculated from formula (4). However, since the data used by the paper is unavailable, it is highly likely that the data tidying processes are different.
+
+The following table summarizes our data analyses involving binary and continuous outcomes. The outcome is binary for NIDA-CTN-0003 and continuous for NIDA-CTN-0030 and NIDA-CTN-0044. 
+
+\begin{tabular}{l|rrr}
+\hline
+ & NIDA-CTN-0003 & NIDA-CTN-0030 & NIDA-CTN-0044 \\
+\hline
+Unadjusted estimator & -0.093 (-0.193,0.008) & 0.016 (-0.02,0.053) & -0.096 (-0.152,-0.04) \\
+Adjusted estimator (S) & -0.098 (-0.199,0.002) & 0.017 (-0.02,0.053) & -0.092 (-0.148,-0.036) \\
+Adjusted estimator (X) & -0.107 (-0.193,-0.02) & 0.015 (-0.018,0.048) & -0.092 (-0.147,-0.037) \\
+DR-WLS estimator (X) & -0.107 (-0.192,-0.021) & 0.015 (-0.018,0.048) & -0.098
+(-0.155,-0.041) \\
+\hline
+\end{tabular}
+
+According to our results, covariate adjustment brings 26\%, 17\% and 3\% variance reduction for NIDA-CTN-0003, NIDA-CTN-0030 and NIDA-CTN-0044, respectively, compared to the unadjusted estimator. This result differs from the original paper on NIDA-CTN-0003, which suggests the variance reduction is 36\%. We consider this difference to be due to the unclearness of the outcome selection. In our setting, any of the three types of opioids (methadone, morphine and oxycodone) being tested positive will be considered a sign of a positive urine test.
+
+It is also worth mentioning that when processing NIDA-CTN-0044, the paper asserts that the original strata data cannot be obtained, since the site data, one of the criteria determining the strata, is not available in the dataset; hence, it uses the rest of the criteria to determine the strata. However, the strata itself is actually available in the data. In our setting, we use the actual one, yet get similar results.
+
+\subsection{Time-to-Event Outcome}
+
+For time-to-event outcomes, assumption 2 is made. Contrary to assumption 1, it assumes censoring completely at random instead of missing at random, and states that there is a positive probability that both the failure time and censoring time occur after the restriction time $\tau$ (under each study arm assignment). The latter is often made in survival analysis. As regards the former, it in NIDA-CTN-0044 means the first missing visit is independent of the time to abstinence, defined as the time to the first two consecutive negative urine tests during the study, given the treatment arm. 
+
+The following figures (on the next page) present the K-M estimators for time-to-abstinence for the study NIDA-CTN-0044, in the control group and treatment group. The variance of the K-M estimator is estimated in two different ways: one ignored the stratification variable and was the estimated variance returned by the “survfit” function in R; the other used the variance formula proposed by the paper that takes the stratification into account. For each of the two variance estimators, we constructed corresponding point-wise CIs for the K-M estimator. 
+
+The solid line is the estimated survival function. Dashed and dotted lines, respectively, represent CIs using the standard method and CIs accounting for randomization strata; the dashed and dotted lines are very similar and almost coincide. The cross signs represent the censoring times. "Variance Reduction" and the associated percentages represent the variance reduction due to accounting for stratified randomization.
+
+While CIs based on different variance estimators are very close to each other, there are variance reductions due to accounting for stratification, which can be translated into sample size reduction needed to achieve the desired power. The variance reduction ranges from 1\% to 14\% as we consider the survival function at different time points. Among all time points, the first time point (one week after randomization) has the greatest variance reduction.
+
+Owing to the data tidying difference mentioned before, our result is slightly different from that of the original paper (1\% to 12\%). This result, nevertheless, still proves that the variance reduction exists in this study, and corresponds with the claim of the paper that the variance formulas in this case are asymptotically conservative.
+
+\input{control-pic}
+
+\input{treatment-pic}
+
+\section{Simulation}
+
+We in real data analysis compare the adjusted estimators (X) to the unadjusted ones, and show a substantial precision gain. However, in exercise, we may simply adjust the covariates, regardless of if they are the stratification variable, which is to say that the reason for the variance reduction may be the adjustment and the trial design combined. We now in simulations are able to test the impact of randomization methods by comparing the adjusted estimators (X) under covariate-adaptive randomization to that under simple randomization.
+
+\subsection{No Missing Data, Binary Outcomes}
+
+For binary outcomes, the standardized logistic regression estimator logistic is calculated by: first fitting a working model: $P(Y = 1|A, X) = \operatorname{expit}(\beta_0 + \beta_AA + \beta^t_XX)$, getting the maximum likelihood estimates; then plugging them back into the model to obtain $\hat\Delta_{\text{Logistic}}=\frac1N\sum_{i=1}^N(\operatorname{expit}(\hat\beta_0 + \hat\beta_A + \hat\beta^t_XX_i)-\operatorname{expit}(\hat\beta_0 + \hat\beta^t_XX_i))$. Now, we set $N=300$, the strata $S_i\sim\operatorname{Bernoulli}(\frac12)$, the covariates $W_{ij}\sim\mathcal{N}(0,1), \text{i.i.d.}$, $X=(W,S)$. With those and other parameters manually fixed, we repeatedly perform simple and stratified randomization ($\pi = 0.2$) and calculate the variances of the estimators using the Bootstrap method\cite{bootstrap}, with $B=500$. %, where $\pi=0.2$ and block size $=10$.
+ 
+The following table shows the variance reduction under 10 tests with parameters randomly changed. 
+Contrary to the predicted results, in a non-negligible proportion of parameter sets, the variance reduction ratios are negative. Hence, the supposed advantages of using covariate-adaptive randomization methods cannot be confirmed under our simulation. However, since the variance and the standard deviation of it is in about the same order of magnitude, it could be the times of simulation, limited by computer resources, are not sufficient to confirm the effect.
+
+\leavevmode\newline
+\resizebox{\linewidth}{!}{
+\begin{tabular}{l|rrrrrrrrrr}
+\hline
+  & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10\\
+\hline
+Adjusted estimator (X) & 0.00200 & 0.00194 & 0.00176 & 0.00181 & 0.00182 & 0.00164 & 0.00188 & 0.00186 & 0.00175 & 0.00196\\
+\hline
+Estimator under simple randomization & 0.00168 & 0.00180 & 0.00187 & 0.00171 & 0.00173 & 0.00178 & 0.00189 & 0.00196 & 0.00178 & 0.00197\\
+\hline
+Variance reduction & -0.18793 & -0.07510 & 0.05996 & -0.05504 & -0.05436 & 0.07695 & 0.00177 & 0.05267 & 0.01846 & 0.00324\\
+\hline
+\end{tabular}
+}
+\leavevmode\newline
+
+\subsection{DR-WLS Estimator, Missing At Random, Binary Outcomes}
+
+The DR-WLS estimator is calculated by first fitting the logistic regression working model $P(M = 1|A, X) = \operatorname{expit}(\alpha_0 + \alpha_AA + \alpha^t_XX)$, getting the ML estimates of parameters; then fitting the previous model with weights $1/\operatorname{expit}(\hat\alpha_0 + \hat\alpha_AA + \hat\alpha^t_XX)$ using only the data with $M_i = 1$. With the same parameters and $\alpha_0, \alpha_A, \alpha_X$ manually fixed, we repeatedly perform simple and stratified randomization and calculate the variances of the estimators.
+        
+The following table shows the variance reduction under 8 tests with parameters randomly changed. Similar to the previous result, in a non-negligible proportion of parameter sets, the variance reduction ratios are negative. Hence, the supposed advantages of using covariate-adaptive randomization methods with DR-WLS estimators cannot be confirmed under our simulation, either.
+
+\leavevmode\newline
+\resizebox{\linewidth}{!}{
+    \begin{tabular}{l|rrrrrrrr}
+\hline
+  & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8\\
+\hline
+Adjusted estimator (X) & 0.00200 & 0.00172 & 0.00201 & 0.00190 & 0.00195 & 0.00251 & 0.00216 & 0.00177\\
+\hline
+Estimator under simple randomization & 0.00185 & 0.00175 & 0.00188 & 0.00183 & 0.00187 & 0.00201 & 0.00199 & 0.00191\\
+\hline
+Variance reduction & -0.08395 & 0.01291 & -0.06857 & -0.03405 & -0.04604 & -0.24953 & -0.08191 & 0.07355\\
+\hline
+\end{tabular}
+}
+\leavevmode\newline
+
+Considering the results above, it is of little sense to verify the K-M estimator on time-to-event outcomes by our method.
+
+\section{Outlook and Discussion}
+
+In this report, we reproduce the work of the original paper and perform simulations. Our real data analysis, though slightly different from the original paper, shows the same conclusion that there is apparent variance reduction. Our simulations, unfortunately, are not able to show significant results. More times of simulations may be run. 
+
+Theorems in the paper for real-value and time-to-event outcome covers a variety of estimators and provide a heuristic proof sketch, that is proving that under stratified and biased-coin randomization
+it is asymptotically linear with the same influence function as
+under simple randomization. M-estimators covers most of useful robust estimator under superpopulation inference framework. For Kaplan-Meier estimator, it is a basic non-parametric estimator of survival function. Future researchers may try to apply the proof approach to other estimators, for example, covariate adjustment K-M estimator in Lu and Tsiatis (2011)\cite{coKMlu2011semiparametric} and Zhang (2015)\cite{coKMzhang2015robust} or apply the analysis of DR-WLS estimator on augmented estimator, like AIPW-AICW estimator in van der Laan and Robins (2003)\cite{van2003unified}. We can analyze real data with those estimators, and analyze real data other than those analyzed in the paper.
+
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+\end{document}
